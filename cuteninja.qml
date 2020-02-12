@@ -64,6 +64,15 @@ Window {
         visible: ninja_climb.visible || ninja_fire.visible
         property bool flipped: false; transform: Scale { origin.x: 16; xScale: rope.flipped ? -1 : 1 }
     }
+    Image {
+        id: hook
+        source: "hook.png"
+        width: 32
+        height: 40
+        x: rope.x - 14
+        y: rope.y - 18
+        visible: rope.visible
+    }
 
     AnimatedSprite {
         id: ninja_fall; source: "sprites.png"; frameX: 256; width: 32; height: 40
