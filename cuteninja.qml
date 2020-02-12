@@ -159,7 +159,7 @@ Window {
 
         rope.x = ninja_climb.x
         rope.y = ninja_climb_anim.to + 40 // so it reaches only to the top of the window, not the top of the sprite above
-        rope.height = root.screen.height - rope.y
+        rope.height = root.screen.height - rope.y - 20
         console.log("climb from", ninja_climb_anim.from, "to", ninja_climb_anim.to);
     }
     function fire() {
@@ -168,20 +168,17 @@ Window {
 
         var window_left = active_xwindow.x - root.screen.virtualX - 32;
         var window_right = active_xwindow.x - root.screen.virtualX + active_xwindow.w;
-        if (ninja_climb.x <= window_left) {
+        if (ninja_fire.x <= window_left) {
             ninja_fire.flipped = true;
+            rope.flipped = true;
         } else {
             ninja_fire.flipped = false;
+            rope.flipped = false;
         }
 
         // rope grows to the right place
         var eventual_rope_length = root.screen.height - active_xwindow.y - root.screen.virtualY - 40 - 28 + 40 + 20; // the +20 is so the rope hangs into our sprite
         var eventual_rope_top = active_xwindow.y - root.screen.virtualY - 40 - 28 + 40;
-
-        ninja_climb_anim.to = active_xwindow.y - root.screen.virtualY - 40 - 28; // sprite height, window decs
-        ninja_climb_anim.from = ninja_climb.y;
-        ninja_climb_anim.duration = 1000 * Math.abs(ninja_climb_anim.to - ninja_climb_anim.from) / 20 / 6 // 20px is one step
-        ninja_climb_anim.start();
 
         rope.x = ninja_fire.x
         rope_grow_height_anim.to = eventual_rope_length;
