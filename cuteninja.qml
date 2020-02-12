@@ -20,6 +20,23 @@ Window {
     property int ninja_screen_x: 1000;
     property int ninja_screen_y: 100;
 
+    function abort() {
+        console.log("abort");
+        // empty the queue so that stopping an animation doesn't trigger a nextInQueue
+        root.queue = [];
+        // stop any running animation, which should set the position of the ninja
+        // and will also do nextInQueue, but there isn't anything in the queue
+        switch (root.ninja_state) {
+            case "fall": ninja_fall_anim.stop(); break;
+            case "run_along": ninja_run_along_anim.stop(); break;
+            case "fire": rope_grow_height_anim.stop(); rope_y_anim.stop(); break;
+            case "climb": ninja_climb_anim.stop(); break;
+            case "stand": break;
+            case "": break;
+            default: console.log("Warning: aborted while in an unexpected state:", root.ninja_state);
+        }
+    }
+
     NumberAnimation {
         id: ninja_fall_anim; target: ninja_fall; property: "y"
         to: 0; from: 0; duration: 0
@@ -52,7 +69,7 @@ Window {
         to: 0; from: 0; duration: 500 }
     NumberAnimation {
         id: rope_y_anim; target: rope; property: "y"
-        to: 0; from: 0; duration: 500
+        to: 0; from: 0; duration: rope_grow_height_anim.duration
         onRunningChanged: { if (!running) { root.nextInQueue(); }}}
 
 
@@ -69,7 +86,7 @@ Window {
         source: "hook.png"
         width: 32
         height: 40
-        x: rope.x - 14
+        x: rope.x - 14 + (rope.flipped ? 28 : 0)
         y: rope.y - 18
         visible: rope.visible
     }
@@ -116,6 +133,7 @@ Window {
         // this will involve detecting this, animating the fall to the bottom, moving
         // the window to the new screen, then animating the fall from the top to the destination
 
+        console.log("begin function fall");
         ninja_fall.x = root.ninja_screen_x;
         ninja_fall.y = root.ninja_screen_y;
 
@@ -123,8 +141,13 @@ Window {
         ninja_fall_anim.to = root.height - 40; // sprite height
         ninja_fall_anim.from = root.ninja_screen_y;
         ninja_fall_anim.duration = 1000 * Math.abs(ninja_fall_anim.to - ninja_fall_anim.from) / 20 / 60 // 20px is one step
-        ninja_fall_anim.start();
-        console.log("fall");
+        console.log("fall", ninja_fall_anim.from, "->", ninja_fall_anim.to);
+        if (ninja_fall_anim.from == ninja_fall_anim.to) {
+            // skip falling if we're already at the bottom
+            root.nextInQueue();
+        } else {
+            ninja_fall_anim.start();
+        }
     }
     function run_along() {
         // FIXME: we need to be clever in this function if we run from screen to screen
@@ -237,7 +260,14 @@ Window {
         next_fn();
     }
 
+    Timer {
+        id: window_change_debounce
+        interval: 250
+        onTriggered: xwindow_handler.window_change()
+    }
+
     Connections {
+        id: xwindow_handler
         target: active_xwindow
 
         function window_change() {
@@ -262,21 +292,20 @@ Window {
             // where the active window changes while we're already in a state of animating run or fire or climb or idle
             if (active_xwindow.wid == 0) {
                 // no window yet, so we're still in setup
-            } else if (root.ninja_state == "fall") {
-                // we're already falling, so don't do anything
-                console.log("already falling");
             } else {
                 // fall to base of screen, run along base, climb up to new window top, run around
+                console.log("window_change", JSON.stringify(active_xwindow));
+                root.abort();
                 root.queue = ["fall", "run_along", "fire", "climb", "stand"];
                 root.nextInQueue();
             }
         }
 
-        onXChanged: window_change()
-        onYChanged: window_change()
-        onHChanged: window_change()
-        onWChanged: window_change()
-        onWidChanged: window_change()
+        onXChanged: window_change_debounce.start()
+        onYChanged: window_change_debounce.start()
+        onHChanged: window_change_debounce.start()
+        onWChanged: window_change_debounce.start()
+        onWidChanged: window_change_debounce.start()
     }
 
 }

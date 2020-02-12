@@ -4,7 +4,8 @@ import sys
 import os
 import time
 import signal
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction
+from PyQt5.QtGui import QIcon
 from PyQt5.QtQml import QQmlApplicationEngine
 from PyQt5.QtCore import QTimer, QThread, pyqtSignal, QObject, pyqtProperty, Qt
 from ewmh import EWMH
@@ -86,8 +87,8 @@ class ActiveWindowMonitor(QThread):
             if parent.id == self.ewmh.root.id:
                 break
             frame = parent
-        # print("Window", cur.get_wm_class()[1], "on current desktop",
-        #       dsk == wdsk, x, y, geo.width, geo.height)
+        print("------------- Window", cur.get_wm_class()[1],
+              x, y, geo.width, geo.height, "-------------")
         self.output.emit(x, y, geo.width, geo.height, cur.id)
 
     def __del__(self):
@@ -171,11 +172,24 @@ def create_thread_results_handler(act, win):
     return actual_thread_results_handler
 
 
+def tray_icon(app):
+    icon = QIcon("icon.png")
+    tray = QSystemTrayIcon()
+    tray.setIcon(icon)
+    tray.setVisible(True)
+    menu = QMenu()
+    action = QAction("Quit")
+    action.triggered.connect(app.quit)
+    menu.addAction(action)
+    tray.setContextMenu(menu)
+
+
 def main():
     print("Cute Ninja startup", time.asctime())
 
     app = QApplication(sys.argv)
     setup_interrupt_handling()
+    tray_icon(app)
     engine = QQmlApplicationEngine()
     context = engine.rootContext()
     act = ActiveWindowProperties()
