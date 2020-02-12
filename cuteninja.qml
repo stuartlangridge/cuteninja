@@ -112,6 +112,10 @@ Window {
     }
 
     function fall() {
+        // FIXME: we need to be clever in this function if we fall from screen to screen
+        // this will involve detecting this, animating the fall to the bottom, moving
+        // the window to the new screen, then animating the fall from the top to the destination
+
         ninja_fall.x = root.ninja_screen_x;
         ninja_fall.y = root.ninja_screen_y;
 
@@ -123,6 +127,10 @@ Window {
         console.log("fall");
     }
     function run_along() {
+        // FIXME: we need to be clever in this function if we run from screen to screen
+        // this will involve detecting this, animating the run to the edge, moving
+        // the window to the new screen, then animating the run from the edge to the destination
+
         ninja_run_along.x = root.ninja_screen_x;
         ninja_run_along.y = root.ninja_screen_y;
 
@@ -147,6 +155,10 @@ Window {
         console.log("run_along from", ninja_run_along_anim.from, "to", ninja_run_along_anim.to, ninja_run_along.flipped);
     }
     function climb() {
+        // FIXME: we need to be clever in this function if we climb from screen to screen
+        // this will involve detecting this, animating the climb to the top, moving
+        // the window to the new screen, then animating the climb from the bottom to the destination
+
         ninja_climb.x = root.ninja_screen_x;
         ninja_climb.y = root.ninja_screen_y;
 
