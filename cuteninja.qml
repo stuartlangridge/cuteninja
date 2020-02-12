@@ -245,14 +245,11 @@ Window {
                 }
             }
 
+            // FIXME: unhandled cases:
+            // where we fall from current position onto the top of the newly active window
+            // where the active window changes while we're already in a state of animating run or fire or climb or idle
             if (active_xwindow.wid == 0) {
                 // no window yet, so we're still in setup
-            } else if (active_xwindow.y == root.y && active_xwindow.x == root.x) {
-                console.log("no change");
-            } else if (active_xwindow.x < root.ninja_screen_x && 
-                       (active_xwindow.x + active_xwindow.width) > root.ninja_screen_x &&
-                       active_xwindow.y > root.ninja_screen_y) {
-                // fall from current position onto new window
             } else if (root.ninja_state == "fall") {
                 // we're already falling, so don't do anything
                 console.log("already falling");
