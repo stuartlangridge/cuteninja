@@ -86,7 +86,7 @@ Window {
             }}}
     NumberAnimation {
         id: rope_grow_height_anim; target: rope; property: "height"
-        to: 0; from: 0; duration: 5000 }
+        to: 0; from: 0; duration: 500 }
     NumberAnimation {
         id: rope_y_anim; target: rope; property: "y"
         to: 0; from: 0; duration: rope_grow_height_anim.duration
@@ -284,6 +284,7 @@ Window {
     function stand() {
         ninja_stand.x = root.ninja_screen_x;
         ninja_stand.y = root.ninja_screen_y;
+        ninja_stand_anim.interval = Math.floor(Math.random() * 6000) + 1000;
         ninja_stand_anim.start();
         root.log("stand");
     }
