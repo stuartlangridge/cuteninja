@@ -43,6 +43,7 @@ Window {
             case "fall":
             case "fall_to_window":
                 ninja_fall_anim.stop(); break;
+            case "run_to_edge":
             case "run_along":
             case "run_on_top":
             case "roll":
@@ -137,7 +138,8 @@ Window {
     AnimatedSprite {
         id: ninja_run_along; source: "sprites.png"; frameX: 0; frameY: 80; width: 32; height: 40
         frameCount: 3; frameWidth: 32; frameHeight: 40; frameRate: 3 * 3
-        visible: root.ninja_state == "run_along" || root.ninja_state == "run_on_top"; interpolate: false; running: visible
+        visible: root.ninja_state == "run_along" || root.ninja_state == "run_on_top" || root.ninja_state == "run_to_edge";
+        interpolate: false; running: visible
         property bool flipped: false; transform: Scale { origin.x: 16; xScale: ninja_run_along.flipped ? -1 : 1 }
     }
     AnimatedSprite {
@@ -220,9 +222,6 @@ Window {
         }
     }
     function run_along() {
-        // FIXME: we need to be clever in this function if we run from screen to screen
-        // this will involve detecting this, animating the run to the edge, moving
-        // the window to the new screen, then animating the run from the edge to the destination
 
         ninja_run_along.x = root.ninja_screen_x;
         ninja_run_along.y = root.ninja_screen_y;
@@ -248,9 +247,6 @@ Window {
         root.log("run_along from", ninja_run_along_anim.from, "to", ninja_run_along_anim.to, ninja_run_along.flipped);
     }
     function run_on_top() {
-        // FIXME: we need to be clever in this function if we run from screen to screen
-        // this will involve detecting this, animating the run to the edge, moving
-        // the window to the new screen, then animating the run from the edge to the destination
 
         ninja_run_along.x = root.ninja_screen_x;
         ninja_run_along.y = root.ninja_screen_y;
@@ -273,10 +269,50 @@ Window {
         ninja_run_along_anim.start();
         root.log("run_on_top from", ninja_run_along_anim.from, "to", ninja_run_along_anim.to, ninja_run_along.flipped);
     }
+    function run_to_edge() {
+        // we're running from one screen to the next
+        // in this set we run to the appropriate edge of this screen
+
+        ninja_run_along.x = root.ninja_screen_x;
+        ninja_run_along.y = root.ninja_screen_y;
+
+        ninja_run_along_anim.from = ninja_run_along.x;
+        if (active_xwindow.x < root.ninja_screen_x) {
+            ninja_run_along_anim.to = 0;
+            ninja_run_along.flipped = true;
+        } else {
+            ninja_run_along_anim.to = root.screen.width;
+            ninja_run_along.flipped = false;
+        }
+
+        ninja_run_along_anim.duration = 1000 * Math.abs(ninja_run_along_anim.to - ninja_run_along_anim.from) / 20 / 20 // 20px is one step
+        ninja_run_along_anim.start();
+        root.log("run_to_edge from", ninja_run_along_anim.from, "to", ninja_run_along_anim.to, ninja_run_along.flipped);
+    }
+    function switch_screen() {
+        var currentScreenX = root.screen.virtualX;
+
+        var screen_for_window = -1;
+        for (var i=0; i<Qt.application.screens.length; i++) {
+            if (active_xwindow.x > Qt.application.screens[i].virtualX && 
+                active_xwindow.x < Qt.application.screens[i].virtualX + Qt.application.screens[i].width &&
+                active_xwindow.y > Qt.application.screens[i].virtualY && 
+                active_xwindow.y < Qt.application.screens[i].virtualY + Qt.application.screens[i].height) {
+                screen_for_window = i;
+            }
+        }
+        root.screen = Qt.application.screens[screen_for_window];
+
+        if (currentScreenX > root.screen.virtualX) {
+            root.ninja_screen_x = root.screen.width;
+        } else {
+            root.ninja_screen_x = 0;
+        }
+        root.ninja_screen_y = root.screen.height - 40;
+        root.nextInQueue();
+    }
+
     function roll() {
-        // FIXME: we need to be clever in this function if we run from screen to screen
-        // this will involve detecting this, animating the run to the edge, moving
-        // the window to the new screen, then animating the run from the edge to the destination
 
         ninja_roll.x = root.ninja_screen_x;
         ninja_roll.y = root.ninja_screen_y;
@@ -417,18 +453,16 @@ Window {
 
         function window_change() {
             // work out if we need to change screens
+            var screen_for_window = -1;
             if (active_xwindow.wid != 0) {
-                var screen_for_window = -1;
                 for (var i=0; i<Qt.application.screens.length; i++) {
                     if (active_xwindow.x > Qt.application.screens[i].virtualX && 
                         active_xwindow.x < Qt.application.screens[i].virtualX + Qt.application.screens[i].width &&
                         active_xwindow.y > Qt.application.screens[i].virtualY && 
                         active_xwindow.y < Qt.application.screens[i].virtualY + Qt.application.screens[i].height) {
                         screen_for_window = i;
+                        console.log("screen for window", screen_for_window);
                     }
-                }
-                if (Qt.application.screens[screen_for_window] != root.screen) {
-                    root.screen = Qt.application.screens[screen_for_window];
                 }
             }
 
@@ -443,7 +477,15 @@ Window {
                 // fall to base of screen, run along base, climb up to new window top, run around
                 root.log("window_change", JSON.stringify(active_xwindow));
                 root.abort();
-                root.queue = ["fall", "run_along", "fire", "climb", "get_on", "idle"];
+                root.queue = ["fall"];
+                if (Qt.application.screens[screen_for_window].virtualX != root.screen.virtualX && 
+                    Qt.application.screens[screen_for_window].virtualY != root.screen.virtualY) {
+                    console.log("sfw", Qt.application.screens[screen_for_window],
+                    Qt.application.screens[screen_for_window].virtualX, "rs", root.screen, root.screen.virtualX);
+                    root.queue.push("run_to_edge");
+                    root.queue.push("switch_screen");
+                }
+                root.queue = root.queue.concat(["run_along", "fire", "climb", "get_on", "idle"]);
                 root.nextInQueue();
             }
         }
