@@ -112,31 +112,31 @@ Window {
     }
 
     AnimatedSprite {
-        id: ninja_fall; source: "sprites.png"; frameX: 256; width: 32; height: 40
+        id: ninja_fall; source: "sprites.png"; frameX: 0; frameY: 160; width: 32; height: 40
         frameCount: 1; frameWidth: 32; frameHeight: 40; frameRate: 1
         visible: root.ninja_state == "fall"; interpolate: false; running: visible
         property bool flipped: false; transform: Scale { origin.x: 16; xScale: ninja_fall.flipped ? -1 : 1 }
     }
     AnimatedSprite {
-        id: ninja_run_along; source: "sprites.png"; frameX: 32; width: 32; height: 40
+        id: ninja_run_along; source: "sprites.png"; frameX: 0; frameY: 80; width: 32; height: 40
         frameCount: 3; frameWidth: 32; frameHeight: 40; frameRate: 3 * 3
         visible: root.ninja_state == "run_along" || root.ninja_state == "run_on_top"; interpolate: false; running: visible
         property bool flipped: false; transform: Scale { origin.x: 16; xScale: ninja_run_along.flipped ? -1 : 1 }
     }
     AnimatedSprite {
-        id: ninja_stand; source: "sprites.png"; frameX: 0; width: 32; height: 40
+        id: ninja_stand; source: "sprites.png"; frameX: 0; frameY: 0; width: 32; height: 40
         frameCount: 1; frameWidth: 32; frameHeight: 40; frameRate: 1
         visible: root.ninja_state == "stand" || root.ninja_state == "get_on"; interpolate: false; running: visible
         property bool flipped: false; transform: Scale { origin.x: 16; xScale: ninja_stand.flipped ? -1 : 1 }
     }
     AnimatedSprite {
-        id: ninja_climb; source: "sprites.png"; frameX: 128; width: 32; height: 40
+        id: ninja_climb; source: "sprites.png"; frameX: 0; frameY: 120; width: 32; height: 40
         frameCount: 3; frameWidth: 32; frameHeight: 40; frameRate: 5
         visible: root.ninja_state == "climb"; interpolate: false; running: visible
         property bool flipped: false; transform: Scale { origin.x: 16; xScale: ninja_climb.flipped ? -1 : 1 }
     }
     AnimatedSprite {
-        id: ninja_reach; source: "sprites.png"; frameX: 224; width: 32; height: 40
+        id: ninja_reach; source: "sprites.png"; frameX: 0; frameY: 200; width: 32; height: 40
         frameCount: 1; frameWidth: 32; frameHeight: 40; frameRate: 1
         visible: root.ninja_state == "reach"; interpolate: false; running: visible
         property bool flipped: false; transform: Scale { origin.x: 16; xScale: ninja_reach.flipped ? -1 : 1 }
