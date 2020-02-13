@@ -43,10 +43,12 @@ Window {
             case "fall": ninja_fall_anim.stop(); break;
             case "run_along":
             case "run_on_top":
+            case "roll":
                 ninja_run_along_anim.stop(); break;
             case "fire": rope_grow_height_anim.stop(); rope_y_anim.stop(); break;
             case "climb": ninja_climb_anim.stop(); break;
             case "stand": ninja_stand_anim.stop(); break;
+            case "sword": ninja_sword_anim.stop(); break;
             case "idle": break;
             case "": break;
             default: root.log("Warning: aborted while in an unexpected state:", root.ninja_state);
@@ -55,6 +57,10 @@ Window {
 
     Timer {
         id: ninja_stand_anim; interval: 1000
+        onTriggered: root.nextInQueue();
+    }
+    Timer {
+        id: ninja_sword_anim; interval: 600
         onTriggered: root.nextInQueue();
     }
     NumberAnimation {
@@ -73,6 +79,15 @@ Window {
             if (!running) {
                 root.ninja_screen_x = ninja_run_along.x;
                 root.ninja_screen_y = ninja_run_along.y;
+                root.nextInQueue();
+            }}}
+    NumberAnimation {
+        id: ninja_roll_anim; target: ninja_roll; property: "x"
+        to: 0; from: 0; duration: 0
+        onRunningChanged: {
+            if (!running) {
+                root.ninja_screen_x = ninja_roll.x;
+                root.ninja_screen_y = ninja_roll.y;
                 root.nextInQueue();
             }}}
     NumberAnimation {
@@ -146,6 +161,18 @@ Window {
         frameCount: 2; frameWidth: 32; frameHeight: 40; frameRate: 6; loops: 1; // doesn't loop
         visible: root.ninja_state == "fire"; interpolate: false; running: visible
         property bool flipped: false; transform: Scale { origin.x: 16; xScale: ninja_fire.flipped ? -1 : 1 }
+    }
+    AnimatedSprite {
+        id: ninja_roll; source: "sprites.png"; frameX: 0; frameY: 240; width: 32; height: 40
+        frameCount: 4; frameWidth: 32; frameHeight: 40; frameRate: 6;
+        visible: root.ninja_state == "roll"; interpolate: false; running: visible
+        property bool flipped: false; transform: Scale { origin.x: 16; xScale: ninja_roll.flipped ? -1 : 1 }
+    }
+    AnimatedSprite {
+        id: ninja_sword; source: "sprites.png"; frameX: 0; frameY: 280; width: 32; height: 40
+        frameCount: 5; frameWidth: 32; frameHeight: 40; frameRate: 20; loops: 1
+        visible: root.ninja_state == "sword"; interpolate: false; running: visible
+        property bool flipped: false; transform: Scale { origin.x: 16; xScale: ninja_sword.flipped ? -1 : 1 }
     }
 
     function fall() {
@@ -223,6 +250,32 @@ Window {
         ninja_run_along_anim.start();
         root.log("run_on_top from", ninja_run_along_anim.from, "to", ninja_run_along_anim.to, ninja_run_along.flipped);
     }
+    function roll() {
+        // FIXME: we need to be clever in this function if we run from screen to screen
+        // this will involve detecting this, animating the run to the edge, moving
+        // the window to the new screen, then animating the run from the edge to the destination
+
+        ninja_roll.x = root.ninja_screen_x;
+        ninja_roll.y = root.ninja_screen_y;
+
+        // run to a random point on the window
+        var window_left = active_xwindow.x - root.screen.virtualX;
+        var window_right = active_xwindow.x - root.screen.virtualX + active_xwindow.w - 32;
+
+        var new_position = Math.floor(Math.random() * (window_right - window_left)) + window_left;
+
+        ninja_roll_anim.to = new_position;
+        ninja_roll_anim.from = ninja_roll.x;
+        if (ninja_roll.x > new_position) {
+            ninja_roll.flipped = true;
+        } else {
+            ninja_roll.flipped = false;
+        }
+        ninja_roll_anim.duration = 1000 * Math.abs(ninja_roll_anim.to - ninja_roll_anim.from) / 20 / 10 // rolls are slower than runs
+        ninja_roll.flipped = ninja_roll_anim.from > ninja_roll_anim.to
+        ninja_roll_anim.start();
+        root.log("roll from", ninja_roll_anim.from, "to", ninja_roll_anim.to, ninja_roll.flipped);
+    }
     function climb() {
         // FIXME: we need to be clever in this function if we climb from screen to screen
         // this will involve detecting this, animating the climb to the top, moving
@@ -288,6 +341,13 @@ Window {
         ninja_stand_anim.start();
         root.log("stand");
     }
+    function sword() {
+        ninja_sword.x = root.ninja_screen_x;
+        ninja_sword.y = root.ninja_screen_y;
+        ninja_sword.flipped = Math.random() < 0.5;
+        ninja_sword_anim.start();
+        root.log("sword");
+    }
     function get_on() {
         ninja_stand.x = root.ninja_screen_x;
         ninja_stand.y = root.ninja_screen_y;
@@ -306,8 +366,8 @@ Window {
     function idle() {
         // the idle animation picks a random thing to do, and pushes that and idle onto the queue
         // this means it'll loop forever
-        queue.push("run_on_top");
-        queue.push("stand");
+        var actions = ["sword", "stand", "roll", "run_on_top"];
+        queue.push(actions[Math.floor(Math.random() * actions.length)]);
         queue.push("idle");
         root.nextInQueue()
     }
