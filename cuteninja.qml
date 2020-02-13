@@ -31,12 +31,17 @@ Window {
             case "run_along": ninja_run_along_anim.stop(); break;
             case "fire": rope_grow_height_anim.stop(); rope_y_anim.stop(); break;
             case "climb": ninja_climb_anim.stop(); break;
-            case "stand": break;
+            case "stand": ninja_stand_anim.stop(); break;
+            case "idle": break;
             case "": break;
             default: console.log("Warning: aborted while in an unexpected state:", root.ninja_state);
         }
     }
 
+    Timer {
+        id: ninja_stand_anim; interval: 1000
+        onTriggered: root.nextInQueue();
+    }
     NumberAnimation {
         id: ninja_fall_anim; target: ninja_fall; property: "y"
         to: 0; from: 0; duration: 0
@@ -100,13 +105,13 @@ Window {
     AnimatedSprite {
         id: ninja_run_along; source: "sprites.png"; frameX: 32; width: 32; height: 40
         frameCount: 3; frameWidth: 32; frameHeight: 40; frameRate: 3 * 3
-        visible: root.ninja_state == "run_along"; interpolate: false; running: visible
+        visible: root.ninja_state == "run_along" || root.ninja_state == "run_on_top"; interpolate: false; running: visible
         property bool flipped: false; transform: Scale { origin.x: 16; xScale: ninja_run_along.flipped ? -1 : 1 }
     }
     AnimatedSprite {
         id: ninja_stand; source: "sprites.png"; frameX: 0; width: 32; height: 40
         frameCount: 1; frameWidth: 32; frameHeight: 40; frameRate: 1
-        visible: root.ninja_state == "stand"; interpolate: false; running: visible
+        visible: root.ninja_state == "stand" || root.ninja_state == "get_on"; interpolate: false; running: visible
         property bool flipped: false; transform: Scale { origin.x: 16; xScale: ninja_stand.flipped ? -1 : 1 }
     }
     AnimatedSprite {
@@ -157,7 +162,7 @@ Window {
         ninja_run_along.x = root.ninja_screen_x;
         ninja_run_along.y = root.ninja_screen_y;
 
-        // fall the length of the window
+        // run to the window
         var window_left = active_xwindow.x - root.screen.virtualX - 32;
         var window_right = active_xwindow.x - root.screen.virtualX + active_xwindow.w;
         if (ninja_run_along.x > window_right) {
@@ -176,6 +181,32 @@ Window {
         ninja_run_along.flipped = ninja_run_along_anim.from > ninja_run_along_anim.to
         ninja_run_along_anim.start();
         console.log("run_along from", ninja_run_along_anim.from, "to", ninja_run_along_anim.to, ninja_run_along.flipped);
+    }
+    function run_on_top() {
+        // FIXME: we need to be clever in this function if we run from screen to screen
+        // this will involve detecting this, animating the run to the edge, moving
+        // the window to the new screen, then animating the run from the edge to the destination
+
+        ninja_run_along.x = root.ninja_screen_x;
+        ninja_run_along.y = root.ninja_screen_y;
+
+        // run to a random point on the window
+        var window_left = active_xwindow.x - root.screen.virtualX;
+        var window_right = active_xwindow.x - root.screen.virtualX + active_xwindow.w - 32;
+
+        var new_position = Math.floor(Math.random() * (window_right - window_left)) + window_left;
+
+        ninja_run_along_anim.to = new_position;
+        ninja_run_along_anim.from = ninja_run_along.x;
+        if (ninja_run_along.x > new_position) {
+            ninja_run_along.flipped = true;
+        } else {
+            ninja_run_along.flipped = false;
+        }
+        ninja_run_along_anim.duration = 1000 * Math.abs(ninja_run_along_anim.to - ninja_run_along_anim.from) / 20 / 20 // 20px is one step
+        ninja_run_along.flipped = ninja_run_along_anim.from > ninja_run_along_anim.to
+        ninja_run_along_anim.start();
+        console.log("run_on_top from", ninja_run_along_anim.from, "to", ninja_run_along_anim.to, ninja_run_along.flipped);
     }
     function climb() {
         // FIXME: we need to be clever in this function if we climb from screen to screen
@@ -238,6 +269,12 @@ Window {
     function stand() {
         ninja_stand.x = root.ninja_screen_x;
         ninja_stand.y = root.ninja_screen_y;
+        ninja_stand_anim.start();
+        console.log("stand");
+    }
+    function get_on() {
+        ninja_stand.x = root.ninja_screen_x;
+        ninja_stand.y = root.ninja_screen_y;
 
         var window_left = active_xwindow.x - root.screen.virtualX - 32;
         var window_right = active_xwindow.x - root.screen.virtualX + active_xwindow.w;
@@ -247,7 +284,16 @@ Window {
             ninja_stand.x -= 40;
         }
         root.ninja_screen_x = ninja_stand.x;
-        console.log("stand");
+        console.log("get_on");
+        root.nextInQueue()
+    }
+    function idle() {
+        // the idle animation picks a random thing to do, and pushes that and idle onto the queue
+        // this means it'll loop forever
+        queue.push("run_on_top");
+        queue.push("stand");
+        queue.push("idle");
+        root.nextInQueue()
     }
     function nextInQueue() {
         if (root.queue.length == 0) {
@@ -296,7 +342,7 @@ Window {
                 // fall to base of screen, run along base, climb up to new window top, run around
                 console.log("window_change", JSON.stringify(active_xwindow));
                 root.abort();
-                root.queue = ["fall", "run_along", "fire", "climb", "stand"];
+                root.queue = ["fall", "run_along", "fire", "climb", "get_on", "idle"];
                 root.nextInQueue();
             }
         }
