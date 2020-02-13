@@ -87,8 +87,8 @@ class ActiveWindowMonitor(QThread):
             if parent.id == self.ewmh.root.id:
                 break
             frame = parent
-        print("------------- Window", cur.get_wm_class()[1],
-              x, y, geo.width, geo.height, "-------------")
+        #print("------------- Window", cur.get_wm_class()[1],
+        #      x, y, geo.width, geo.height, "-------------")
         self.output.emit(x, y, geo.width, geo.height, cur.id)
 
     def __del__(self):
