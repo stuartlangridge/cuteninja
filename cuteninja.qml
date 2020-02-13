@@ -40,7 +40,9 @@ Window {
         // stop any running animation, which should set the position of the ninja
         // and will also do nextInQueue, but there isn't anything in the queue
         switch (root.ninja_state) {
-            case "fall": ninja_fall_anim.stop(); break;
+            case "fall":
+            case "fall_to_window":
+                ninja_fall_anim.stop(); break;
             case "run_along":
             case "run_on_top":
             case "roll":
@@ -129,7 +131,7 @@ Window {
     AnimatedSprite {
         id: ninja_fall; source: "sprites.png"; frameX: 0; frameY: 160; width: 32; height: 40
         frameCount: 1; frameWidth: 32; frameHeight: 40; frameRate: 1
-        visible: root.ninja_state == "fall"; interpolate: false; running: visible
+        visible: root.ninja_state == "fall" || root.ninja_state == "fall_to_window"; interpolate: false; running: visible
         property bool flipped: false; transform: Scale { origin.x: 16; xScale: ninja_fall.flipped ? -1 : 1 }
     }
     AnimatedSprite {
@@ -189,6 +191,27 @@ Window {
         ninja_fall_anim.from = root.ninja_screen_y;
         ninja_fall_anim.duration = 1000 * Math.abs(ninja_fall_anim.to - ninja_fall_anim.from) / 20 / 60 // 20px is one step
         root.log("fall", ninja_fall_anim.from, "->", ninja_fall_anim.to);
+        if (ninja_fall_anim.from == ninja_fall_anim.to) {
+            // skip falling if we're already at the bottom
+            root.nextInQueue();
+        } else {
+            ninja_fall_anim.start();
+        }
+    }
+    function fall_to_window() {
+        // FIXME: we need to be clever in this function if we fall from screen to screen
+        // this will involve detecting this, animating the fall to the bottom, moving
+        // the window to the new screen, then animating the fall from the top to the destination
+
+        root.log("begin function fall_to_window");
+        ninja_fall.x = root.ninja_screen_x;
+        ninja_fall.y = root.ninja_screen_y;
+
+        // fall the length of the window
+        ninja_fall_anim.to = active_xwindow.y - 40 - 28; // sprite height
+        ninja_fall_anim.from = root.ninja_screen_y;
+        ninja_fall_anim.duration = 1000 * Math.abs(ninja_fall_anim.to - ninja_fall_anim.from) / 20 / 60 // 20px is one step
+        root.log("fall_to_window", ninja_fall_anim.from, "->", ninja_fall_anim.to);
         if (ninja_fall_anim.from == ninja_fall_anim.to) {
             // skip falling if we're already at the bottom
             root.nextInQueue();
@@ -409,10 +432,13 @@ Window {
                 }
             }
 
-            // FIXME: unhandled cases:
-            // where we fall from current position onto the top of the newly active window
             if (active_xwindow.wid == 0) {
                 // no window yet, so we're still in setup
+            } else if (active_xwindow.x - root.screen.virtualX < root.ninja_screen_x &&
+                       active_xwindow.x + active_xwindow.w - root.screen.virtualX > root.ninja_screen_x) {
+                root.abort();
+                root.queue = ["fall_to_window", "idle"];
+                root.nextInQueue();
             } else {
                 // fall to base of screen, run along base, climb up to new window top, run around
                 root.log("window_change", JSON.stringify(active_xwindow));
