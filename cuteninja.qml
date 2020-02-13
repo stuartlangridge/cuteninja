@@ -28,7 +28,9 @@ Window {
         // and will also do nextInQueue, but there isn't anything in the queue
         switch (root.ninja_state) {
             case "fall": ninja_fall_anim.stop(); break;
-            case "run_along": ninja_run_along_anim.stop(); break;
+            case "run_along":
+            case "run_on_top":
+                ninja_run_along_anim.stop(); break;
             case "fire": rope_grow_height_anim.stop(); rope_y_anim.stop(); break;
             case "climb": ninja_climb_anim.stop(); break;
             case "stand": ninja_stand_anim.stop(); break;
