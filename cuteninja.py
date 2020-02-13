@@ -172,16 +172,16 @@ def create_thread_results_handler(act, win):
     return actual_thread_results_handler
 
 
-def tray_icon(app):
-    icon = QIcon("icon.png")
-    tray = QSystemTrayIcon()
-    tray.setIcon(icon)
-    tray.setVisible(True)
+def tray_icon(app, win):
+    tray = QSystemTrayIcon(QIcon("icon.png"), win)
     menu = QMenu()
-    action = QAction("Quit")
+    action = menu.addAction("Quit")
     action.triggered.connect(app.quit)
     menu.addAction(action)
     tray.setContextMenu(menu)
+    tray.setVisible(True)
+    tray.setToolTip("Cute Ninja")
+    tray.show()
 
 
 def main():
@@ -189,7 +189,6 @@ def main():
 
     app = QApplication(sys.argv)
     setup_interrupt_handling()
-    tray_icon(app)
     engine = QQmlApplicationEngine()
     context = engine.rootContext()
     act = ActiveWindowProperties()
@@ -197,6 +196,8 @@ def main():
     engine.load(os.path.join(os.path.split(__file__)[0], 'cuteninja.qml'))
     win = engine.rootObjects()[0]
     win.showNormal()
+
+    tray_icon(app, win)
 
     bgthread = ActiveWindowMonitor()
     bgthread.start()
