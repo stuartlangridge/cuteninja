@@ -335,7 +335,6 @@ Window {
 
             // FIXME: unhandled cases:
             // where we fall from current position onto the top of the newly active window
-            // where the active window changes while we're already in a state of animating run or fire or climb or idle
             if (active_xwindow.wid == 0) {
                 // no window yet, so we're still in setup
             } else {
