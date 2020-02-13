@@ -15,13 +15,26 @@ Window {
     x: screen.virtualX
     y: screen.virtualY
 
+    Component.onCompleted: {
+        for (var i=0; i<Qt.application.arguments.length; i++) {
+            if (Qt.application.arguments[i] == "--debug") {
+                root.debug_logging = true;
+            }
+        }
+    }
+
     property var queue: [];
+    property bool debug_logging: false;
     property string ninja_state: "";
     property int ninja_screen_x: 1000;
     property int ninja_screen_y: 100;
 
+    function log() {
+        if (root.debug_logging) console.log.apply(console, arguments);
+    }
+
     function abort() {
-        console.log("abort");
+        root.log("abort");
         // empty the queue so that stopping an animation doesn't trigger a nextInQueue
         root.queue = [];
         // stop any running animation, which should set the position of the ninja
@@ -36,7 +49,7 @@ Window {
             case "stand": ninja_stand_anim.stop(); break;
             case "idle": break;
             case "": break;
-            default: console.log("Warning: aborted while in an unexpected state:", root.ninja_state);
+            default: root.log("Warning: aborted while in an unexpected state:", root.ninja_state);
         }
     }
 
@@ -73,7 +86,7 @@ Window {
             }}}
     NumberAnimation {
         id: rope_grow_height_anim; target: rope; property: "height"
-        to: 0; from: 0; duration: 500 }
+        to: 0; from: 0; duration: 5000 }
     NumberAnimation {
         id: rope_y_anim; target: rope; property: "y"
         to: 0; from: 0; duration: rope_grow_height_anim.duration
@@ -140,7 +153,7 @@ Window {
         // this will involve detecting this, animating the fall to the bottom, moving
         // the window to the new screen, then animating the fall from the top to the destination
 
-        console.log("begin function fall");
+        root.log("begin function fall");
         ninja_fall.x = root.ninja_screen_x;
         ninja_fall.y = root.ninja_screen_y;
 
@@ -148,7 +161,7 @@ Window {
         ninja_fall_anim.to = root.height - 40; // sprite height
         ninja_fall_anim.from = root.ninja_screen_y;
         ninja_fall_anim.duration = 1000 * Math.abs(ninja_fall_anim.to - ninja_fall_anim.from) / 20 / 60 // 20px is one step
-        console.log("fall", ninja_fall_anim.from, "->", ninja_fall_anim.to);
+        root.log("fall", ninja_fall_anim.from, "->", ninja_fall_anim.to);
         if (ninja_fall_anim.from == ninja_fall_anim.to) {
             // skip falling if we're already at the bottom
             root.nextInQueue();
@@ -182,7 +195,7 @@ Window {
         ninja_run_along_anim.duration = 1000 * Math.abs(ninja_run_along_anim.to - ninja_run_along_anim.from) / 20 / 20 // 20px is one step
         ninja_run_along.flipped = ninja_run_along_anim.from > ninja_run_along_anim.to
         ninja_run_along_anim.start();
-        console.log("run_along from", ninja_run_along_anim.from, "to", ninja_run_along_anim.to, ninja_run_along.flipped);
+        root.log("run_along from", ninja_run_along_anim.from, "to", ninja_run_along_anim.to, ninja_run_along.flipped);
     }
     function run_on_top() {
         // FIXME: we need to be clever in this function if we run from screen to screen
@@ -208,7 +221,7 @@ Window {
         ninja_run_along_anim.duration = 1000 * Math.abs(ninja_run_along_anim.to - ninja_run_along_anim.from) / 20 / 20 // 20px is one step
         ninja_run_along.flipped = ninja_run_along_anim.from > ninja_run_along_anim.to
         ninja_run_along_anim.start();
-        console.log("run_on_top from", ninja_run_along_anim.from, "to", ninja_run_along_anim.to, ninja_run_along.flipped);
+        root.log("run_on_top from", ninja_run_along_anim.from, "to", ninja_run_along_anim.to, ninja_run_along.flipped);
     }
     function climb() {
         // FIXME: we need to be clever in this function if we climb from screen to screen
@@ -237,7 +250,7 @@ Window {
         rope.x = ninja_climb.x
         rope.y = ninja_climb_anim.to + 40 // so it reaches only to the top of the window, not the top of the sprite above
         rope.height = root.screen.height - rope.y - 20
-        console.log("climb from", ninja_climb_anim.from, "to", ninja_climb_anim.to);
+        root.log("climb from", ninja_climb_anim.from, "to", ninja_climb_anim.to);
     }
     function fire() {
         ninja_fire.x = root.ninja_screen_x;
@@ -265,14 +278,14 @@ Window {
         rope_grow_height_anim.start();
         rope_y_anim.start();
 
-        console.log("fire, rope y", rope_y_anim.from, "->", rope_y_anim.to,
+        root.log("fire, rope y", rope_y_anim.from, "->", rope_y_anim.to,
             " height", rope_grow_height_anim.from, "->", rope_grow_height_anim.to);
     }
     function stand() {
         ninja_stand.x = root.ninja_screen_x;
         ninja_stand.y = root.ninja_screen_y;
         ninja_stand_anim.start();
-        console.log("stand");
+        root.log("stand");
     }
     function get_on() {
         ninja_stand.x = root.ninja_screen_x;
@@ -286,7 +299,7 @@ Window {
             ninja_stand.x -= 40;
         }
         root.ninja_screen_x = ninja_stand.x;
-        console.log("get_on");
+        root.log("get_on");
         root.nextInQueue()
     }
     function idle() {
@@ -304,7 +317,7 @@ Window {
         var next_name = root.queue.shift();
         var next_fn = root[next_name];
         root.ninja_state = next_name;
-        console.log("begin step", next_name);
+        root.log("begin step", next_name);
         next_fn();
     }
 
@@ -341,7 +354,7 @@ Window {
                 // no window yet, so we're still in setup
             } else {
                 // fall to base of screen, run along base, climb up to new window top, run around
-                console.log("window_change", JSON.stringify(active_xwindow));
+                root.log("window_change", JSON.stringify(active_xwindow));
                 root.abort();
                 root.queue = ["fall", "run_along", "fire", "climb", "get_on", "idle"];
                 root.nextInQueue();
